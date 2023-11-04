@@ -5,6 +5,8 @@ using namespace kiraz::token;
 using kiraz::Token;
 %}
 
+%option noyywrap
+
 OP_RETURNS ->
 OP_EQUALS  ==
 OP_ASSIGN  =

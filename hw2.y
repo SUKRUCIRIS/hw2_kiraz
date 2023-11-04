@@ -49,7 +49,8 @@ int yyerror(const char *s);
 %token    KW_IMPORT
 
 %%
-
+prog:
+	OP_SCOLON KW_IMPORT
 %%
 
 int yyerror(const char *s) {
