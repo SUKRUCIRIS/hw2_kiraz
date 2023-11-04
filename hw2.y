@@ -9,7 +9,21 @@ int yyerror(const char *s);
 
 #define YYSTYPE std::shared_ptr<Stmt>
 #define YYDEBUG 1
+
+#define YY_USER_ACTION                                       \
+  yylloc.first_line = yylloc.last_line;                      \
+  yylloc.first_column = yylloc.last_column;                  \
+  if (yylloc.first_line == yylineno)                         \
+     yylloc.last_column += yyleng;                           \
+  else {                                                     \
+     int col;                                                \
+     for (col = 1; yytext[yyleng - col] != '\n'; ++col) {}   \
+     yylloc.last_column = col;                               \
+     yylloc.last_line = yylineno;                            \
+  }
 %}
+
+%locations
 
 %token    IDENTIFIER
 
@@ -74,7 +88,7 @@ neg: OP_MINUS L_INTEGER { $$ = -$2; };
 %%
 
 int yyerror(const char *s) {
-    fmt::print("** Parser error. text: '{}'\n", s);
+    fmt::print("** Parser Error at line# '{}' char# '{}'. Current token: '{}'\n", yylineno, yylloc.first_column, s);
     Stmt::reset_root();
     return 1;
 }

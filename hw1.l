@@ -72,7 +72,8 @@ IGNORED    [ \t]
 {OP_DOT}        { return Token::feed(OperatorDot()); }
 
 {IDENTIFIER}    { return Token::feed(Identifier(yytext)); }
-{LC_DEC}+       { return Token::feed(Integer(10, yytext)); }
+{LC_DEC}+       { return Token::feed(Integer::DecInteger(yytext)); }
+0x{LC_HEX}+     { return Token::feed(Integer::HexInteger(yytext)); }
 
 {IGNORED}+      { return -1; }
 .               { return Token::feed(Rejected(yytext)); }

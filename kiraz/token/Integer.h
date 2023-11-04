@@ -8,8 +8,8 @@ namespace token {
 
 class Integer : public Token {
 public:
-    Integer(int base, const std::string &value) : m_base(base), m_value(value) {}
-
+    static Integer DecInteger(const std::string &value) { return Integer(10, value); }
+    static Integer HexInteger(const std::string &value) { return Integer(16, value); }
     auto get_value() const { return m_value; }
     auto get_base() const { return m_base; }
 
@@ -20,6 +20,7 @@ public:
     }
 
 private:
+    Integer(int base, const std::string &value) : m_base(base), m_value(value) {}
     int m_base;
     std::string m_value;
 };

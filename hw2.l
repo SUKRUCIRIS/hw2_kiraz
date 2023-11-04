@@ -5,6 +5,7 @@ using namespace kiraz::token;
 using kiraz::Token;
 %}
 
+%option yylineno
 %option noyywrap
 
 OP_RETURNS ->
@@ -53,8 +54,8 @@ IGNORED    [ \t]
 {LC_TRUE}       { return Token::feed(Boolean(true)); }
 {LC_FALSE}      { return Token::feed(Boolean(false)); }
 
-{LC_DEC}+       { return Token::feed(Integer(10, yytext)); }
-0x{LC_HEX}+     { return Token::feed(Integer(16, yytext)); }
+{LC_DEC}+       { return Token::feed(Integer::DecInteger(yytext)); }
+0x{LC_HEX}+     { return Token::feed(Integer::HexInteger(yytext)); }
 \"[^\"]+\"      { return Token::feed(String(yytext)); }
 
 {OP_RETURNS}    { return Token::feed(OperatorReturns()); }
