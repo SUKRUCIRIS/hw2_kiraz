@@ -49,8 +49,28 @@ int yyerror(const char *s);
 %token    KW_IMPORT
 
 %%
-prog:
-	OP_SCOLON KW_IMPORT
+input:	%empty 
+		| input line;
+
+line: 	expression OP_NEWLINE
+    	;
+
+expression: int
+			| plus
+			| minus
+			| mult
+			| div
+			| paren
+			| neg
+			;
+
+int: L_INTEGER { $$ = $1; };
+plus: L_INTEGER OP_PLUS L_INTEGER { $$ = $1 + $3; };
+minus: L_INTEGER OP_MINUS L_INTEGER { $$ = $1 - $3; };
+mult: L_INTEGER OP_MULT L_INTEGER { $$ = $1 * $3; };
+div: L_INTEGER OP_DIVF L_INTEGER { $$ = $1 / $3; };
+paren: OP_LPAREN L_INTEGER OP_RPAREN { $$ = $2; };
+neg: OP_MINUS L_INTEGER { $$ = -$2; };
 %%
 
 int yyerror(const char *s) {
