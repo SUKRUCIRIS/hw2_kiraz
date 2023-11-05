@@ -19,6 +19,7 @@ int yyerror(const char *s);
      yylloc.last_line = yylineno;                            \
   }
   std::shared_ptr<kiraz::Stmt> new_number;
+  unsigned char new_started=1;
 %}
 
 %locations
@@ -61,30 +62,48 @@ int yyerror(const char *s);
 %token    KW_IMPORT
 
 %%
-input: 	%empty
-		| expression
-		| input OP_NEWLINE
-		| input OP_SCOLON
-		;
-expression: posi_int { kiraz::Stmt::add<kiraz::stmt::Integer>(true, kiraz::Token::last()); }
-			| nega_int { kiraz::Stmt::add<kiraz::stmt::Integer>(false, kiraz::Token::last()); }
-			| expression OP_MULT int { kiraz::Stmt::add<kiraz::stmt::Operator>(2,kiraz::Stmt::get_root(),new_number); }
-          	| expression OP_DIVF int { kiraz::Stmt::add<kiraz::stmt::Operator>(3,kiraz::Stmt::get_root(),new_number); }
-          	| expression OP_PLUS int { kiraz::Stmt::add<kiraz::stmt::Operator>(0,kiraz::Stmt::get_root(),new_number); }
-          	| expression OP_MINUS int { kiraz::Stmt::add<kiraz::stmt::Operator>(1,kiraz::Stmt::get_root(),new_number); }
-			| OP_LPAREN expression OP_RPAREN OP_MULT int { kiraz::Stmt::add<kiraz::stmt::Operator>(2,kiraz::Stmt::get_root(),new_number); }
-          	| OP_LPAREN expression OP_RPAREN OP_DIVF int { kiraz::Stmt::add<kiraz::stmt::Operator>(3,kiraz::Stmt::get_root(),new_number); }
-          	| OP_LPAREN expression OP_RPAREN OP_PLUS int { kiraz::Stmt::add<kiraz::stmt::Operator>(0,kiraz::Stmt::get_root(),new_number); }
-          	| OP_LPAREN expression OP_RPAREN OP_MINUS int { kiraz::Stmt::add<kiraz::stmt::Operator>(1,kiraz::Stmt::get_root(),new_number); }
-			;
 
-int: posi_int {new_number=std::make_shared<kiraz::stmt::Integer>(kiraz::stmt::Integer(true, kiraz::Token::last()));}
-	| nega_int {new_number=std::make_shared<kiraz::stmt::Integer>(kiraz::stmt::Integer(false, kiraz::Token::last()));}
+input: 	%empty
+		| second{new_started=1;}
+		| input OP_NEWLINE{new_started=1;}
+		| input OP_SCOLON{new_started=1;}
+		;
+
+second: second OP_PLUS first { kiraz::Stmt::add<kiraz::stmt::Operator>(0,kiraz::Stmt::get_root(),new_number); }
+		| second OP_MINUS first { kiraz::Stmt::add<kiraz::stmt::Operator>(1,kiraz::Stmt::get_root(),new_number); }
+		| first
+		;
+
+first: 	first OP_MULT paran { kiraz::Stmt::add<kiraz::stmt::Operator>(2,kiraz::Stmt::get_root(),new_number); }
+		| first OP_DIVF paran { kiraz::Stmt::add<kiraz::stmt::Operator>(3,kiraz::Stmt::get_root(),new_number); }
+		| paran
+		;
+
+paran: 	OP_LPAREN second OP_RPAREN
+		| int
+
+int: posi_int {
+	new_number=std::make_shared<kiraz::stmt::Integer>(kiraz::stmt::Integer(true, kiraz::Token::last()));
+	if(new_started==1){
+		kiraz::Stmt::add<kiraz::stmt::Integer>(true, kiraz::Token::last());
+		new_started=0;
+	}
+	}
+	| nega_int {
+		new_number=std::make_shared<kiraz::stmt::Integer>(kiraz::stmt::Integer(false, kiraz::Token::last()));
+		if(new_started==1){
+			kiraz::Stmt::add<kiraz::stmt::Integer>(false, kiraz::Token::last());
+			new_started=0;
+		}
+		}
 	;
+
 posi_int: 	L_INTEGER
 			| OP_PLUS L_INTEGER
 			; 
+
 nega_int: 	OP_MINUS L_INTEGER;
+
 %%
 
 int yyerror(const char *s) {
