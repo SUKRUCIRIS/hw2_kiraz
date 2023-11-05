@@ -18,8 +18,6 @@ int yyerror(const char *s);
      yylloc.last_column = col;                               \
      yylloc.last_line = yylineno;                            \
   }
-  std::shared_ptr<kiraz::Stmt> new_number;
-  unsigned char new_started=1;
 %}
 
 %locations
@@ -64,39 +62,28 @@ int yyerror(const char *s);
 %%
 
 input: 	%empty
-		| second{new_started=1;}
-		| input OP_NEWLINE{new_started=1;}
-		| input OP_SCOLON{new_started=1;}
+		| second
+		| input OP_NEWLINE
+		| input OP_SCOLON
 		;
 
-second: second OP_PLUS first { kiraz::Stmt::add<kiraz::stmt::Operator>(0,kiraz::Stmt::get_root(),new_number); }
-		| second OP_MINUS first { kiraz::Stmt::add<kiraz::stmt::Operator>(1,kiraz::Stmt::get_root(),new_number); }
-		| first
+second: second OP_PLUS first { $$=kiraz::Stmt::add<kiraz::stmt::Operator>(0,$1,$3); }
+		| second OP_MINUS first { $$=kiraz::Stmt::add<kiraz::stmt::Operator>(1,$1,$3); }
+		| first {$$=$1;}
 		;
 
-first: 	first OP_MULT paran { kiraz::Stmt::add<kiraz::stmt::Operator>(2,kiraz::Stmt::get_root(),new_number); }
-		| first OP_DIVF paran { kiraz::Stmt::add<kiraz::stmt::Operator>(3,kiraz::Stmt::get_root(),new_number); }
-		| paran
+first: 	first OP_MULT paran { $$=kiraz::Stmt::add<kiraz::stmt::Operator>(2,$1,$3); }
+		| first OP_DIVF paran { $$=kiraz::Stmt::add<kiraz::stmt::Operator>(3,$1,$3); }
+		| paran {$$=$1;}
 		;
 
-paran: 	OP_LPAREN second OP_RPAREN
-		| int
+paran: 	OP_LPAREN second OP_RPAREN {$$=$2;}
+		| int {$$=$1;}
+		;
 
-int: posi_int {
-	new_number=std::make_shared<kiraz::stmt::Integer>(kiraz::stmt::Integer(true, kiraz::Token::last()));
-	if(new_started==1){
-		kiraz::Stmt::add<kiraz::stmt::Integer>(true, kiraz::Token::last());
-		new_started=0;
-	}
-	}
-	| nega_int {
-		new_number=std::make_shared<kiraz::stmt::Integer>(kiraz::stmt::Integer(false, kiraz::Token::last()));
-		if(new_started==1){
-			kiraz::Stmt::add<kiraz::stmt::Integer>(false, kiraz::Token::last());
-			new_started=0;
-		}
-		}
-	;
+int: 	posi_int {$$=kiraz::Stmt::add<kiraz::stmt::Integer>(true, kiraz::Token::last());}
+		| nega_int {$$=kiraz::Stmt::add<kiraz::stmt::Integer>(false, kiraz::Token::last());}
+		;
 
 posi_int: 	L_INTEGER
 			| OP_PLUS L_INTEGER
