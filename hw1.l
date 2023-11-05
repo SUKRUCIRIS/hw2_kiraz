@@ -5,6 +5,7 @@ using namespace kiraz::token;
 using kiraz::Token;
 %}
 
+%option yylineno
 %option noyywrap
 
 OP_RETURNS ->

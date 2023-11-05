@@ -2,12 +2,9 @@
 #include <kiraz/stmt.h>
 #include <kiraz/hw2-lexer.hpp>
 
-using namespace kiraz;
-using kiraz::Stmt;
-using kiraz::Token;
 int yyerror(const char *s);
 
-#define YYSTYPE std::shared_ptr<Stmt>
+#define YYSTYPE std::shared_ptr<kiraz::Stmt>
 #define YYDEBUG 1
 
 #define YY_USER_ACTION                                       \
@@ -21,6 +18,7 @@ int yyerror(const char *s);
      yylloc.last_column = col;                               \
      yylloc.last_line = yylineno;                            \
   }
+  std::shared_ptr<kiraz::Stmt> new_number;
 %}
 
 %locations
@@ -63,32 +61,34 @@ int yyerror(const char *s);
 %token    KW_IMPORT
 
 %%
-input:	%empty 
-		| input line;
-
-line: 	expression OP_NEWLINE
-    	;
-
-expression: int
-			| plus
-			| minus
-			| mult
-			| div
-			| paren
-			| neg
+input: 	%empty
+		| expression
+		| input OP_NEWLINE
+		| input OP_SCOLON
+		;
+expression: posi_int { kiraz::Stmt::add<kiraz::stmt::Integer>(true, kiraz::Token::last()); }
+			| nega_int { kiraz::Stmt::add<kiraz::stmt::Integer>(false, kiraz::Token::last()); }
+			| expression OP_MULT int { kiraz::Stmt::add<kiraz::stmt::Operator>(2,kiraz::Stmt::get_root(),new_number); }
+          	| expression OP_DIVF int { kiraz::Stmt::add<kiraz::stmt::Operator>(3,kiraz::Stmt::get_root(),new_number); }
+          	| expression OP_PLUS int { kiraz::Stmt::add<kiraz::stmt::Operator>(0,kiraz::Stmt::get_root(),new_number); }
+          	| expression OP_MINUS int { kiraz::Stmt::add<kiraz::stmt::Operator>(1,kiraz::Stmt::get_root(),new_number); }
+			| OP_LPAREN expression OP_RPAREN OP_MULT int { kiraz::Stmt::add<kiraz::stmt::Operator>(2,kiraz::Stmt::get_root(),new_number); }
+          	| OP_LPAREN expression OP_RPAREN OP_DIVF int { kiraz::Stmt::add<kiraz::stmt::Operator>(3,kiraz::Stmt::get_root(),new_number); }
+          	| OP_LPAREN expression OP_RPAREN OP_PLUS int { kiraz::Stmt::add<kiraz::stmt::Operator>(0,kiraz::Stmt::get_root(),new_number); }
+          	| OP_LPAREN expression OP_RPAREN OP_MINUS int { kiraz::Stmt::add<kiraz::stmt::Operator>(1,kiraz::Stmt::get_root(),new_number); }
 			;
 
-int: L_INTEGER { $$ = $1; };
-plus: L_INTEGER OP_PLUS L_INTEGER { $$ = $1 + $3; };
-minus: L_INTEGER OP_MINUS L_INTEGER { $$ = $1 - $3; };
-mult: L_INTEGER OP_MULT L_INTEGER { $$ = $1 * $3; };
-div: L_INTEGER OP_DIVF L_INTEGER { $$ = $1 / $3; };
-paren: OP_LPAREN L_INTEGER OP_RPAREN { $$ = $2; };
-neg: OP_MINUS L_INTEGER { $$ = -$2; };
+int: posi_int {new_number=std::make_shared<kiraz::stmt::Integer>(kiraz::stmt::Integer(true, kiraz::Token::last()));}
+	| nega_int {new_number=std::make_shared<kiraz::stmt::Integer>(kiraz::stmt::Integer(false, kiraz::Token::last()));}
+	;
+posi_int: 	L_INTEGER
+			| OP_PLUS L_INTEGER
+			; 
+nega_int: 	OP_MINUS L_INTEGER;
 %%
 
 int yyerror(const char *s) {
-    fmt::print("** Parser Error at line# '{}' char# '{}'. Current token: '{}'\n", yylineno, yylloc.first_column, s);
-    Stmt::reset_root();
+    fmt::print("** Parser Error at line# {} char# {}. Current token: {}\n", yylineno, yylloc.first_column, kiraz::Token::last().get_repr());
+    kiraz::Stmt::reset_root();
     return 1;
 }
