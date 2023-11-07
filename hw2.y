@@ -7,17 +7,7 @@ int yyerror(const char *s);
 #define YYSTYPE std::shared_ptr<kiraz::Stmt>
 #define YYDEBUG 1
 
-#define YY_USER_ACTION                                       \
-  yylloc.first_line = yylloc.last_line;                      \
-  yylloc.first_column = yylloc.last_column;                  \
-  if (yylloc.first_line == yylineno)                         \
-     yylloc.last_column += yyleng;                           \
-  else {                                                     \
-     int col;                                                \
-     for (col = 1; yytext[yyleng - col] != '\n'; ++col) {}   \
-     yylloc.last_column = col;                               \
-     yylloc.last_line = yylineno;                            \
-  }
+extern int char_number;
 %}
 
 %locations
@@ -94,7 +84,7 @@ nega_int: 	OP_MINUS L_INTEGER;
 %%
 
 int yyerror(const char *s) {
-    fmt::print("** Parser Error at line# {} char# {}. Current token: {}\n", yylineno, yylloc.first_column, kiraz::Token::last().get_repr());
+    fmt::print("** Parser Error at line# {} char# {}. Current token: {}\n", yylineno, char_number, kiraz::Token::last().get_repr());
     kiraz::Stmt::reset_root();
     return 1;
 }
